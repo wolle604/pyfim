@@ -1,0 +1,17 @@
+<config>
+    <dir>
+        <ignore>no</ignore>
+        <checkmeta>yes</checkmeta>
+        <path></path>
+    </dir>
+    <dir>
+        <ignore>no</ignore>
+        <checkmeta>yes</checkmeta>
+        <path></path>
+    </dir>
+    <dir>
+        <ignore>yes</ignore>
+        <checkmeta>no</checkmeta>
+        <path></path>
+    </dir>
+</config>
