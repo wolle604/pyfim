@@ -45,13 +45,6 @@ else:
     syslog.syslog(syslog.LOG_WARNING, f"pyfim-[CONFIG] Scanning with Meta:{path_meta}")
     syslog.syslog(syslog.LOG_WARNING, f"pyfim-[CONFIG] Ignoring:{path_ignore}")
 
-
-    def writeDB(dbupdate):
-        with open('./pyfim.db', 'w') as f:
-            for line in dbupdate:
-                f.write(f"{line}\n")
-
-
     def removeNewLine(lines):
         return [*map(lambda s: s.replace("\n", ""), lines)]
 
@@ -74,7 +67,7 @@ else:
                 for entry in listOfFile:
                     # Create full path
                     fullPath = os.path.join(dir, entry)
-                    if fullPath not in path_ignore:
+                    if fullPath not in path_ignore and '\\' not in fullPath:
                         # If entry is a directory then get the list of files in this directory
                         if os.path.isdir(fullPath):
                             allFiles = allFiles + getListOfFiles(fullPath)
@@ -83,7 +76,6 @@ else:
                     else:
                         continue
         return allFiles
-
 
     path_meta_files = getListOfFiles(path_meta)
     path_norm_files = getListOfFiles(path_norm)
@@ -94,10 +86,10 @@ else:
     if os.path.exists("./pyfim.db") and os.path.getsize("./pyfim.db") > 0:
         cpyfim.compareAndUpdateDB(dbupdate)
         syslog.syslog(syslog.LOG_WARNING, "pyfim-[INIT] Update Database")
-        writeDB(dbupdate)
+        cpyfim.writeDB(dbupdate)
     else:
         syslog.syslog(syslog.LOG_WARNING, "pyfim-[INIT] Create Database")
-        writeDB(dbupdate)
+        cpyfim.writeDB(dbupdate)
 
     syslog.syslog(syslog.LOG_WARNING, f"pyfim-[END] Scan took:{round((time.time() - start_time), 5)} Sec")
     sys.exit(1)
