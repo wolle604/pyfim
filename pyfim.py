@@ -79,8 +79,7 @@ def writeDB(dbupdate):
 
 def compareAndUpdateDB(dbupdate):
     dbcompare = list()
-    diffforgrep = "./out"
-    tag = ""
+    tag = str()
     with open("./pyfim.db", "r") as f:
         for line in f:
             dbcompare.append(line.strip("\n"))
@@ -91,8 +90,6 @@ def compareAndUpdateDB(dbupdate):
 
     sdu = set(dbupdate)
     diffsDel = [x for x in dbcompare if x not in sdu]
-
-    print(diffsDel, diffModAdd)
     if not diffsDel and not diffModAdd:
         return None
     if diffModAdd:
