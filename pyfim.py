@@ -4,64 +4,71 @@ import syslog
 import hashlib
 import xml.etree.ElementTree as tree
 import time
-def calcHashNorm(path_norm_files, dbupdate):
-    for i in range(len(path_norm_files)):
+from time import sleep
+
+
+def calcHashNorm(path_normal_files, update):
+    for i in range(len(path_normal_files)):
+        sleep(0.0001)
         try:
-            file = path_norm_files[i]
+            file = path_normal_files[i]
             if os.path.isfile(file):
-                hash = hashlib.sha1()
+                hashsha256 = hashlib.sha256()
                 with open(file, 'rb') as f:
                     for chunk in iter(lambda: f.read(524288), b""):
-                        hash.update(chunk)
-                dbupdate.append(f"path:{file};sha1:{hash.hexdigest()};stat:")
+                        hashsha256.update(chunk)
+                update.append(f"path:{file};sha256:{hashsha256.hexdigest()};stat:")
             elif os.path.isdir(file):
-                meta_hash = hashlib.sha1(str(os.stat(file)).encode('utf-8'))
-                dbupdate.append(f"path:{file};sha1:;stat:{meta_hash.hexdigest()}")
-        except Exception as e:
-            syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] {e}")
-    return dbupdate
+                meta_hash = hashlib.sha256(str(os.stat(file)).encode('utf-8'))
+                update.append(f"path:{file};sha256:;stat:{meta_hash.hexdigest()}")
+        except Exception as err:
+            syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] {err}")
+    return update
 
 
-def calcHashMeta(path_meta_files, dbupdate):
-    for i in range(len(path_meta_files)):
+def calcHashMeta(path_meta__files, update):
+    for i in range(len(path_meta__files)):
+        sleep(0.0001)
         try:
-            file = path_meta_files[i]
+            file = path_meta__files[i]
             if os.path.isfile(file):
-                meta_hash = hashlib.sha1(str(os.stat(file)).encode('utf-8'))
-                hash = hashlib.sha1()
+                meta_hash = hashlib.sha256(str(os.stat(file)).encode('utf-8'))
+                hashsha256 = hashlib.sha256()
                 with open(file, 'rb') as f:
-                        for chunk in iter(lambda: f.read(524288), b""):
-                            hash.update(chunk)
-                dbupdate.append(f"path:{file};sha1:{hash.hexdigest()};stat:{meta_hash.hexdigest()}")
+                    for chunk in iter(lambda: f.read(524288), b""):
+                        hashsha256.update(chunk)
+                update.append(f"path:{file};sha256:{hashsha256.hexdigest()};stat:{meta_hash.hexdigest()}")
             elif os.path.isdir(file):
-                meta_hash = hashlib.sha1(str(os.stat(file)).encode('utf-8'))
-                dbupdate.append(f"path:{file};sha1:;stat:{meta_hash.hexdigest()}")
-        except Exception as e:
-            syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] {e}")
-    return dbupdate
+                meta_hash = hashlib.sha256(str(os.stat(file)).encode('utf-8'))
+                update.append(f"path:{file};sha256:;stat:{meta_hash.hexdigest()}")
+        except Exception as err:
+            syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] {err}")
+    return update
+
 
 def removeNewLine(lines):
     return [*map(lambda s: s.replace("\n", ""), lines)]
+
 
 def getListOfFiles(dirNames):
     dirNames = dirNames.split(",")
     allFiles = list()
     listOfFile = list()
-    for dir in dirNames:
-        if dir:
-            if not os.path.exists(dir):
-                syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] Dir not found:{dir}, Dir deleted or check Config")
+    for directory in dirNames:
+        if directory:
+            if not os.path.exists(directory):
+                syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] Dir not found:{directory}, Dir deleted or check Config")
                 continue
-            if os.path.isdir(dir):
-                allFiles.append(dir)
-            if not os.path.isfile(dir):
-                listOfFile = os.listdir(dir)
+            if os.path.isdir(directory):
+                allFiles.append(directory)
+            if not os.path.isfile(directory):
+                listOfFile = os.listdir(directory)
             else:
-                listOfFile.append(dir)
+                listOfFile.append(directory)
             # Iterate over all the entries
             for entry in listOfFile:
                 # Create full path
-                fullPath = os.path.join(dir, entry)
+                fullPath = os.path.join(directory, entry)
                 if fullPath not in path_ignore and '\\' not in fullPath:
                     # If entry is a directory then get the list of files in this directory
                     if os.path.isdir(fullPath):
@@ -72,23 +79,24 @@ def getListOfFiles(dirNames):
                     continue
     return allFiles
 
-def writeDB(dbupdate):
-    dbupdatewnewline = ["{}\n".format(i) for i in dbupdate]
+
+def writeDB(update):
+    dbupdatewnewline = ["{}\n".format(i) for i in update]
     with open('./pyfim.db', 'w') as f:
         f.writelines(dbupdatewnewline)
 
-def compareAndUpdateDB(dbupdate):
+
+def compareAndUpdateDB(update):
     dbcompare = list()
-    tag = str()
     with open("./pyfim.db", "r") as f:
         for line in f:
             dbcompare.append(line.strip("\n"))
-    if dbcompare == dbupdate:
+    if dbcompare == update:
         return None
     sdc = set(dbcompare)
-    diffModAdd = [x for x in dbupdate if x not in sdc]
+    diffModAdd = [x for x in update if x not in sdc]
 
-    sdu = set(dbupdate)
+    sdu = set(update)
     diffsDel = [x for x in dbcompare if x not in sdu]
     if not diffsDel and not diffModAdd:
         return None
@@ -102,8 +110,8 @@ def compareAndUpdateDB(dbupdate):
                 # modified
                 entrysplit = entry.split(";")
                 file = parts[0].replace('path:', '')
-                oldFileHash = entrysplit[1].replace("sha1:", "")
-                newFileHash = parts[1].replace("sha1:", "")
+                oldFileHash = entrysplit[1].replace("sha256:", "")
+                newFileHash = parts[1].replace("sha256:", "")
                 oldStatHash = entrysplit[2].replace("stat:", "")
                 newStatHash = parts[2].replace("stat:", "")
                 if not oldStatHash and oldFileHash != newFileHash:
@@ -117,7 +125,7 @@ def compareAndUpdateDB(dbupdate):
             else:
                 # added
                 file = parts[0].replace('path:', '')
-                newFileHash = parts[1].replace("sha1:", "")
+                newFileHash = parts[1].replace("sha256:", "")
                 newStatHash = parts[2].replace("stat:", "")
                 if newFileHash and not newStatHash:
                     tag = "[FILE]"
@@ -135,7 +143,7 @@ def compareAndUpdateDB(dbupdate):
             pathfordelcheck = "%s;" % (parts[0])
             if not [s for s in diffModAdd if pathfordelcheck in s]:
                 file = parts[0].replace('path:', '')
-                FileHash = parts[1].replace("sha1:", "")
+                FileHash = parts[1].replace("sha256:", "")
                 StatHash = parts[2].replace("stat:", "")
                 if FileHash and not StatHash:
                     tag = "[FILE]"
@@ -145,12 +153,14 @@ def compareAndUpdateDB(dbupdate):
                     tag = "[FILE,META]"
                 syslog.syslog(syslog.LOG_CRIT,
                               f"pyfim-{tag} Deleted:{file}, File-Hash:{FileHash}, Meta-Hash:{StatHash}")
-    return dbupdate
+    return update
 
 
 # Insert alternative Path here
 xmlconfig = "./config.xml"
 #
+niceVal = -19
+os.nice(niceVal)
 syslog.syslog(syslog.LOG_WARNING, "pyfim-[START]")
 start_time = time.time()
 if not os.path.exists(xmlconfig) or os.path.getsize(xmlconfig) < 1:
@@ -175,8 +185,8 @@ for x in xmlroot:
             path_meta = path_meta + f"{path},"
         elif checkmeta == "no" and path:
             path_norm = path_norm + f"{path},"
-    except:
-        syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] Failure when reading config.xml")
+    except Exception as e:
+        syslog.syslog(syslog.LOG_CRIT, f"pyfim-[ERROR] Failure when reading config.xml {e}")
 
 if not path_meta and not path_norm:
     syslog.syslog(syslog.LOG_WARNING,
