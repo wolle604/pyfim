@@ -106,7 +106,7 @@ def compareAndUpdateDB(update):
             entry = diffModAdd[i]
             parts = entry.split(";")
             pathformodcheck = "%s;" % (parts[0])
-            if [True for s in diffsDel if pathformodcheck in s]:
+            if [True for s in diffsDel if pathformodcheck in s and sleep(0.0005) is None]:
                 # modified
                 entrysplit = entry.split(";")
                 file = parts[0].replace('path:', '')
@@ -141,7 +141,7 @@ def compareAndUpdateDB(update):
             entry = diffsDel[i]
             parts = entry.split(";")
             pathfordelcheck = "%s;" % (parts[0])
-            if not [s for s in diffModAdd if pathfordelcheck in s]:
+            if not [s for s in diffModAdd if pathfordelcheck in s and sleep(0.0005) is None]:
                 file = parts[0].replace('path:', '')
                 FileHash = parts[1].replace("sha256:", "")
                 StatHash = parts[2].replace("stat:", "")
